@@ -1,0 +1,60 @@
+﻿@page "/todolist"
+@using System.Text.Json;
+@*@inject Blazored.LocalStorage.ILocalStorageService localStorage*@
+@inject HttpClient httpClient
+
+<PageTitle>Todo List</PageTitle>
+
+<h1>Todo List (@TodoItems.Count(x=> !x.IsDone)) </h1>
+
+<ul>
+    @foreach(var item in TodoItems)
+    {
+        <li>
+            <input type="checkbox" @bind="item.IsDone" /> 
+            <input @bind="item.Title" />  
+            <button class="btn btn-danger" @onclick="()=> OnDelete(item)">X</button>
+        </li>
+    }
+</ul>
+
+<input @bind="newTodoTitle" />
+<button class="btn btn-primary" @onclick="OnAdd">Add</button>
+<button class="btn btn-success" @onclick="OnSave">Save</button>
+
+@code {
+    List<TodoItem> TodoItems { get; set; } = new();
+    private string newTodoTitle { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        TodoItems = await httpClient.GetFromJsonAsync<List<TodoItem>>("Todo");
+        //var json = await localStorage.GetItemAsync<string>("todoItems"); //jsRuntime.InvokeAsync<string>("getTodoItems");
+        //if (!string.IsNullOrWhiteSpace(json))
+        //{
+        //    TodoItems = JsonSerializer.Deserialize<List<TodoItem>>(json);
+        //}
+
+    }
+
+    void OnAdd()
+    {
+        TodoItems.Add(new TodoItem
+        {
+            Title = newTodoTitle
+        });
+        newTodoTitle = null;
+    }
+
+    void OnDelete(TodoItem toDelete)
+    {
+        TodoItems.Remove(toDelete);
+    }
+
+    async Task OnSave()
+    {
+        await httpClient.PostAsJsonAsync("Todo", TodoItems);
+        //await localStorage.SetItemAsync("todoItems", TodoItems);
+        //await jsRuntime.InvokeVoidAsync("saveTodoItems", JsonSerializer.Serialize(TodoItems));
+    }
+}
